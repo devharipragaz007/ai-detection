@@ -8,6 +8,7 @@ import {
   scoreToBorder,
 } from "@/lib/highlight";
 import { wordDiff, type DiffSegment } from "@/lib/diff";
+import { track } from "@/lib/analytics";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -373,6 +374,11 @@ export default function AIDetector() {
     setValidationError(null);
     setAppState("loading");
     setApiError(null);
+    track("analyze_clicked", {
+      text_length: text.split(/\s+/).length,
+      char_count: text.length,
+    })
+    const startTime = Date.now()
     try {
       const response = await fetch("/api/analyze", {
         method: "POST",
@@ -384,11 +390,21 @@ export default function AIDetector() {
         throw new Error(err.error ?? "Analysis failed");
       }
       const data = (await response.json()) as AnalysisResult;
+      track("analysis_completed", {
+        score: data.score,
+        label: data.label,
+        text_length: text.split(/\s+/).length,
+        time_to_result_ms: Date.now() - startTime,
+      })
       setResult(data);
       // Sync state with the trimmed text that was analyzed
       setInputText(text);
       setAppState("results");
     } catch (err) {
+      track("error_occurred", {
+        action: "analyze",
+        message: err instanceof Error ? err.message : "Analysis failed",
+      })
       setApiError(err instanceof Error ? err.message : "Analysis failed");
       setAppState("idle");
     }
@@ -398,6 +414,11 @@ export default function AIDetector() {
     setRewriteLoading(true);
     setAppState("rewriting");
     setApiError(null);
+    track("rewrite_clicked", {
+      score: result?.score,
+      text_length: inputText.trim().split(/\s+/).length,
+    })
+    const rewriteStartTime = Date.now()
     try {
       const response = await fetch("/api/rewrite", {
         method: "POST",
@@ -409,9 +430,17 @@ export default function AIDetector() {
         throw new Error(err.error ?? "Rewrite failed");
       }
       const data = (await response.json()) as { rewrite: string };
+      track("rewrite_completed", {
+        text_length: inputText.trim().split(/\s+/).length,
+        time_to_result_ms: Date.now() - rewriteStartTime,
+      })
       setRewrittenText(data.rewrite);
       setAppState("rewritten");
     } catch (err) {
+      track("error_occurred", {
+        action: "rewrite",
+        message: err instanceof Error ? err.message : "Rewrite failed",
+      })
       setApiError(err instanceof Error ? err.message : "Rewrite failed");
       setAppState("results");
     } finally {
