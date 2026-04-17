@@ -4,6 +4,8 @@ Detect AI-generated content instantly. Paste any text and get a probability scor
 
 **Live Demo:** [ai-detection-iota.vercel.app](https://ai-detection-iota.vercel.app)
 
+**Video Walkthrough:** [Watch on Loom](https://www.loom.com/share/b957a599430744f9b7ec5c9881c3bd80)
+
 ---
 
 ## What It Does
